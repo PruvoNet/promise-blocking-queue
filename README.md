@@ -13,7 +13,7 @@ be consumed using streams.
 Useful for rate-limiting async (or sync) operations that consume large data sets. 
 For example, when interacting with a REST API or when doing CPU/memory intensive tasks.
 
-## Why?
+## Why
 If we use `Bluebird.map()` for example, we are forced to load all the data in memory, 
 before being able to consume it - Out Of Memory Exception is right around the corner.   
 
@@ -164,7 +164,6 @@ The difference with `empty` is that `idle` guarantees that all work from the que
 ## Credits
 The library is based on 
 [p-limit](https://github.com/sindresorhus/p-limit) and [p-queue](https://github.com/sindresorhus/p-queue) (by the amazing [sindresorhus](https://github.com/sindresorhus))
-
 
 ## Versions
 
