@@ -1,0 +1,75 @@
+{
+  "name": "promise-blocking-queue",
+  "version": "0.0.1",
+  "description": "Memory optimized promise blocking queue with concurrency control",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "typings": "dist/index.d.ts",
+  "engines": {
+    "node": ">=6"
+  },
+  "scripts": {
+    "clean": "rm -rf node_modules build coverage dist",
+    "build": "npm run lint && npm run buildDist",
+    "buildDist": "rm -rf dist/* && ./node_modules/.bin/tsc",
+    "test": "npm run lint && npm run mocha",
+    "mocha": "mocha test/**/*.ts --reporter spec --opts test/mocha.opts",
+    "cover": "istanbul cover -x dist/index.js node_modules/mocha/bin/_mocha test/**/*.ts -- -R spec --opts test/mocha.opts",
+    "lint": "tslint -c tslint.json 'src/**/*.ts' 'test/**/*.ts'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PruvoNet/promise-blocking-queue.git"
+  },
+  "files": [
+    "/dist/!(*.spec).d.ts",
+    "/dist/!(*.spec).js"
+  ],
+  "keywords": [
+    "promise",
+    "queue",
+    "enqueue",
+    "limit",
+    "limited",
+    "concurrency",
+    "throttle",
+    "throat",
+    "rate",
+    "batch",
+    "ratelimit",
+    "priority",
+    "priorityqueue",
+    "fifo",
+    "job",
+    "task",
+    "async",
+    "await",
+    "promises",
+    "bluebird"
+  ],
+  "author": "Regev Brody <regevbr@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PruvoNet/promise-blocking-queue/issues"
+  },
+  "homepage": "https://github.com/PruvoNet/promise-blocking-queue#readme",
+  "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/mocha": "^5.2.6",
+    "@types/node": "^12.0.2",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "coveralls": "^3.0.3",
+    "delay": "^4.2.0",
+    "dirty-chai": "^2.0.1",
+    "istanbul": "^0.4.5",
+    "mocha": "^6.1.4",
+    "sinon": "^7.3.2",
+    "sinon-chai": "^3.3.0",
+    "sleep-promise": "^8.0.1",
+    "ts-node": "^8.1.0",
+    "tslint": "^5.16.0",
+    "typescript": "^3.5.2"
+  }
+}
