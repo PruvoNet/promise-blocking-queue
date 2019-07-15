@@ -227,7 +227,7 @@ describe('promise blocking queue', () => {
                         expect(events[1].name).to.eql('two');
                         expect(events[2].name).to.eql('three');
                         expect(events[1].time - events[0].time).to.be.lt(50);
-                        expect(events[2].time - events[1].time).to.be.gte(100);
+                        expect(events[2].time - events[1].time).to.be.gte(99);
                     });
             });
 
