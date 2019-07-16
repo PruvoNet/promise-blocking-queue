@@ -3,6 +3,8 @@
 import {EventEmitter} from 'events';
 import {StrictEventEmitter} from './EventEmitterTypesHelper';
 import {IBlockingQueueOptions, IEnqueueResult, QueueFn} from './types';
+import * as LinkedList from 'linked-list';
+import {Item} from 'linked-list';
 
 interface IBlockingQueueEvents {
     idle: void;
@@ -18,6 +20,12 @@ interface IPromiseParts<T> {
     resolve: PromiseResolve<T>;
 }
 
+class Node<T, K extends any[]> extends Item {
+    constructor(public item: IQueueItem<T, K>) {
+        super();
+    }
+}
+
 interface IQueueItem<T, K extends any[]> {
     enqueueResolve: PromiseResolve<void>;
     fnResolve: PromiseResolve<T>;
@@ -28,9 +36,10 @@ interface IQueueItem<T, K extends any[]> {
 export class BlockingQueue extends (EventEmitter as new() => MessageEmitter) {
 
     private readonly _options: IBlockingQueueOptions;
-    private readonly _queue: Array<IQueueItem<any, any>> = [];
+    private readonly _queue = new LinkedList<Node<any, any>>();
     private readonly _boundNext: any;
     private _activeCount: number = 0;
+    private _pendingCount: number = 0;
 
     constructor(options: IBlockingQueueOptions) {
         super();
@@ -62,7 +71,8 @@ export class BlockingQueue extends (EventEmitter as new() => MessageEmitter) {
         if (this.activeCount < this._options.concurrency) {
             this._run(item);
         } else {
-            this._queue.push(item);
+            this._queue.append(new Node(item));
+            this._pendingCount++;
         }
         return {
             enqueuePromise: enqueuePromiseParts.promise,
@@ -75,15 +85,17 @@ export class BlockingQueue extends (EventEmitter as new() => MessageEmitter) {
     }
 
     public get pendingCount(): number {
-        return this._queue.length;
+        return this._pendingCount;
     }
 
     private _next() {
         this._activeCount--;
 
-        const item = this._queue.shift();
-        if (item) {
-            this._run(item);
+        const node = this._queue.head;
+        if (node) {
+            node.detach();
+            this._pendingCount--;
+            this._run(node.item);
         } else {
             this.emit('empty');
             if (this._activeCount === 0) {
