@@ -33,55 +33,98 @@ npm install promise-blocking-queue
 
 ## Usage
 
-Let's assume we have a very large (a couple of GBs) file called `users.json` which contains a long list of users we want to add to our DB.
-Also, let's assume that our DB instance it very cheap, and as such we don't want to load it to much, so we only want to handle
-100 concurrent DB insert operations.
-We can achieve a short scalable solution like:
+Let's assume we have a very large (a couple of GBs) file called `users.json` which contains a long list of users we want to add to our DB.  
+Also, let's assume that our DB instance it very cheap, and as such we don't want to load it too much, so we only want to handle
+2 concurrent DB insert operations.  
+
+We can achieve a short scalable solution like so:
 
 ```typescript
 import * as JSONStream from 'JSONStream';
 import * as fs from 'fs';
-import * as _ from 'underscore';
 import * as es from 'event-stream';
 import { BlockingQueue } from 'promise-blocking-queue';
 
-const queue = new BlockingQueue({ concurrency: 100 });
-let count = 0;
+const queue = new BlockingQueue({ concurrency: 2 });
+let handled = 0;
+let failed = 0;
 
 const mapper = (user, cb) => {
-  queue.enqueue(() => {
+  console.log('streamed', user.username);
+  const qResult = queue.enqueue(() => {
+    console.log('adding', user.username);
     // Add user to DB
-    return Promise.resolve();
-  }).enqueuePromise
-    .then(() => {
-      console.log('handled', count++);
-      cb();
-    })
-    .catch((err) => {
-      cb(err);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        console.log('added', user.username);
+        resolve();
+      }, (handled + 1) * 100);
+    }).then(() => {
+      console.log('handled', ++handled);
     });
+  });
+  qResult.fnPromise.catch(() => {
+    console.log('failed', ++failed);
+  });
+  // Continue streaming only after current item handling starts
+  qResult.enqueuePromise.then(cb, cb);
   return false;
 };
 
-const readStream = fs.createReadStream('./users.json', { flags: 'r', encoding: 'utf-8' });
-const jsonReadStream = JSONStream.parse('*');
-const mapStream = es.map(mapper);
-
-readStream
-  .pipe(jsonReadStream)
-  .pipe(mapStream)
-  .on('data', _.noop)
+fs.createReadStream('./users.json', { flags: 'r', encoding: 'utf-8' })
+  .pipe(JSONStream.parse('*'))
+  .pipe(es.map(mapper))
   .on('error', (err) => {
     console.log('error streaming', err);
-    process.exit(1);
   })
   .on('end', () => {
     console.log('done streaming');
     queue.on('idle', () => {
-      console.log('done processing', count);
-      process.exit(0);
+      console.log(`done processing - ${handled} handled, ${failed} failed`);
     });
   });
+```
+
+If `users.json` is like:
+
+```json
+[
+  {
+    "username": "a"
+  },
+  {
+    "username": "b"
+  },
+  {
+    "username": "c"
+  },
+  {
+    "username": "d"
+  }
+]
+```
+
+Output will be:
+
+```bash
+streamed a
+adding a
+streamed b
+adding b
+streamed c // c now waits in line to start and streaming is paused until then
+added a
+handled 1
+streamed d // d only get streamed after c has a spot in the queue
+adding c // c only get handled after a is done
+added b
+handled 2
+adding d // d only get handled after b is done
+done streaming
+added c
+handled 3
+added d
+handled 4
+done processing - 4 handled, 0 failed
 ```
 
 ## API
