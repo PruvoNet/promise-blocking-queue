@@ -1,6 +1,6 @@
 {
   "name": "promise-blocking-queue",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Memory optimized promise blocking queue with concurrency control",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -73,6 +73,6 @@
     "typescript": "^3.5.3"
   },
   "dependencies": {
-    "linked-list": "^2.0.1"
+    "linked-list": "^2.1.0"
   }
 }

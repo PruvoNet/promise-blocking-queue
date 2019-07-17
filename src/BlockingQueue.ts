@@ -39,7 +39,6 @@ export class BlockingQueue extends (EventEmitter as new() => MessageEmitter) {
     private readonly _queue = new LinkedList<Node<any, any>>();
     private readonly _boundNext: any;
     private _activeCount: number = 0;
-    private _pendingCount: number = 0;
 
     constructor(options: IBlockingQueueOptions) {
         super();
@@ -72,7 +71,6 @@ export class BlockingQueue extends (EventEmitter as new() => MessageEmitter) {
             this._run(item);
         } else {
             this._queue.append(new Node(item));
-            this._pendingCount++;
         }
         return {
             enqueuePromise: enqueuePromiseParts.promise,
@@ -85,7 +83,7 @@ export class BlockingQueue extends (EventEmitter as new() => MessageEmitter) {
     }
 
     public get pendingCount(): number {
-        return this._pendingCount;
+        return this._queue.size;
     }
 
     private _next() {
@@ -94,7 +92,6 @@ export class BlockingQueue extends (EventEmitter as new() => MessageEmitter) {
         const node = this._queue.head;
         if (node) {
             node.detach();
-            this._pendingCount--;
             this._run(node.item);
         } else {
             this.emit('empty');
