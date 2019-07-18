@@ -21,7 +21,7 @@ If we use [p-queue](https://github.com/sindresorhus/p-limit) (by the amazing [si
 for example, we can utilize streams to avoid memory bloat, but we have no (easy) way to control 
 the stream flow without hitting that Out Of Memory Exception.
 
-The solution - a blocking queue that returns a promise that will be resolved when the added item gain an available slot in the 
+The solution - a blocking queue that returns a promise that will be resolved when the added item gains an available slot in the 
 queue, thus, allowing us to pause the stream consumption, until there is a _real_ need to consume the next item - keeping us 
 memory smart while maintaining concurrency level of data handling.
 
@@ -31,7 +31,7 @@ memory smart while maintaining concurrency level of data handling.
 npm install promise-blocking-queue
 ```
 
-## Usage
+## Usage example
 
 Let's assume we have a very large (a couple of GBs) file called `users.json` which contains a long list of users we want to add to our DB.  
 Also, let's assume that our DB instance it very cheap, and as such we don't want to load it too much, so we only want to handle
@@ -43,29 +43,31 @@ We can achieve a short scalable solution like so:
 import * as JSONStream from 'JSONStream';
 import * as fs from 'fs';
 import * as es from 'event-stream';
+import * as sleep from 'sleep-promise';
 import { BlockingQueue } from 'promise-blocking-queue';
 
 const queue = new BlockingQueue({ concurrency: 2 });
 let handled = 0;
 let failed = 0;
 
+const logFailed = () => {
+  console.log(`failed ${++failed}`);
+};
+
+const logAddedUser = (username) => () => {
+  console.log(`added ${username} #${++handled}`);
+};
+
+const addUserToDB = (user) => {
+  console.log(`adding ${user.username}`);
+  // Simulate long running task
+  return sleep((handled + 1) * 100).then(logAddedUser(user.username));
+};
+
 const mapper = (user, cb) => {
-  console.log('streamed', user.username);
-  const qResult = queue.enqueue(() => {
-    console.log('adding', user.username);
-    // Add user to DB
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log('added', user.username);
-        resolve();
-      }, (handled + 1) * 100);
-    }).then(() => {
-      console.log('handled', ++handled);
-    });
-  });
-  qResult.fnPromise.catch(() => {
-    console.log('failed', ++failed);
-  });
+  console.log(`streamed ${user.username}`);
+  const qResult = queue.enqueue(addUserToDB, user);
+  qResult.fnPromise.catch(logFailed);
   // Continue streaming only after current item handling starts
   qResult.enqueuePromise.then(cb, cb);
   return false;
@@ -112,18 +114,14 @@ adding a
 streamed b
 adding b
 streamed c // c now waits in line to start and streaming is paused until then
-added a
-handled 1
+added a #1
 streamed d // d only get streamed after c has a spot in the queue
-adding c // c only get handled after a is done
-added b
-handled 2
-adding d // d only get handled after b is done
+adding c // c only gets handled after a is done
+added b #2
+adding d // d only gets handled after b is done
 done streaming
-added c
-handled 3
-added d
-handled 4
+added c #3
+added d #4
 done processing - 4 handled, 0 failed
 ```
 
