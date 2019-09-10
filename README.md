@@ -50,12 +50,18 @@ const queue = new BlockingQueue({ concurrency: 2 });
 let handled = 0;
 let failed = 0;
 
+const readStream = fs.createReadStream('./users.json', { flags: 'r', encoding: 'utf-8' });
+const jsonReadStream = JSONStream.parse('*');
+const jsonWriteStream = JSONStream.stringify();
+const writeStream = fs.createWriteStream('./results.json');
+
 const logFailed = () => {
   console.log(`failed ${++failed}`);
 };
 
 const logAddedUser = (username) => () => {
   console.log(`added ${username} #${++handled}`);
+  jsonWriteStream.write(username);
 };
 
 const addUserToDB = (user) => {
@@ -73,18 +79,41 @@ const mapper = (user, cb) => {
   return false;
 };
 
-fs.createReadStream('./users.json', { flags: 'r', encoding: 'utf-8' })
-  .pipe(JSONStream.parse('*'))
-  .pipe(es.map(mapper))
-  .on('error', (err) => {
-    console.log('error streaming', err);
-  })
-  .on('end', () => {
-    console.log('done streaming');
-    queue.on('idle', () => {
-      console.log(`done processing - ${handled} handled, ${failed} failed`);
-    });
+// tslint:disable-next-line:no-empty
+const noop = () => {};
+
+const onReadEnd = () => {
+  console.log('done read streaming');
+  // Wait until all work is done
+  queue.on('idle', () => {
+    jsonWriteStream.end();
   });
+};
+
+const onWriteEnd = () => {
+  console.log(`done processing - ${handled} handled, ${failed} failed`);
+  process.exit(0);
+};
+
+jsonWriteStream
+  .pipe(writeStream)
+  .on('error', (err) => {
+    console.log('error wrtie streaming', err);
+    process.exit(1);
+  })
+  .on('end', onWriteEnd)
+  .on('finish', onWriteEnd);
+
+readStream
+  .pipe(jsonReadStream)
+  .pipe(es.map(mapper))
+  .on('data', noop)
+  .on('error', (err) => {
+    console.log('error read streaming', err);
+    process.exit(1);
+  })
+  .on('finish', onReadEnd)
+  .on('end', onReadEnd);
 ```
 
 If `users.json` is like:
@@ -119,10 +148,24 @@ streamed d // d only get streamed after c has a spot in the queue
 adding c // c only gets handled after a is done
 added b #2
 adding d // d only gets handled after b is done
-done streaming
+done read streaming
 added c #3
 added d #4
 done processing - 4 handled, 0 failed
+```
+
+`results.json` will be:
+
+```json
+[
+"a"
+,
+"b"
+,
+"c"
+,
+"d"
+]
 ```
 
 ## API
