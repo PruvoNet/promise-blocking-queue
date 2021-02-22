@@ -79,6 +79,7 @@ describe('promise blocking queue', () => {
                 const item = queue.enqueue((x: number, y: number): string => {
                     return `${x + y}`;
                 }, 5, 6);
+                expect(item.started).to.eql(true);
                 expect(queue.activeCount).to.eql(1);
                 expect(queue.pendingCount).to.eql(0);
                 return item.enqueuePromise
@@ -97,6 +98,7 @@ describe('promise blocking queue', () => {
                 const item = queue.enqueue((x: number, y: number): Promise<string> => {
                     return Promise.resolve(`${x + y}`);
                 }, 5, 6);
+                expect(item.started).to.eql(true);
                 expect(queue.activeCount).to.eql(1);
                 expect(queue.pendingCount).to.eql(0);
                 return item.enqueuePromise
@@ -115,6 +117,7 @@ describe('promise blocking queue', () => {
                 const item = queue.enqueue((): string => {
                     return `11`;
                 });
+                expect(item.started).to.eql(true);
                 expect(queue.activeCount).to.eql(1);
                 expect(queue.pendingCount).to.eql(0);
                 return item.enqueuePromise
@@ -133,6 +136,7 @@ describe('promise blocking queue', () => {
                 const item = queue.enqueue((): Promise<string> => {
                     return Promise.resolve(`11`);
                 });
+                expect(item.started).to.eql(true);
                 expect(queue.activeCount).to.eql(1);
                 expect(queue.pendingCount).to.eql(0);
                 return item.enqueuePromise
@@ -163,9 +167,11 @@ describe('promise blocking queue', () => {
                 const events: IEvent[] = [];
                 const queue = new BlockingQueue({concurrency: 1});
                 const resultOne = queue.enqueue(constructRunFn(100), 'one', events);
+                expect(resultOne.started).to.eql(true);
                 expect(queue.activeCount).to.eql(1);
                 expect(queue.pendingCount).to.eql(0);
                 const resultTwo = queue.enqueue(constructRunFn(100), 'two', events);
+                expect(resultTwo.started).to.eql(false);
                 expect(queue.activeCount).to.eql(1);
                 expect(queue.pendingCount).to.eql(1);
                 return resultOne.enqueuePromise
@@ -196,12 +202,15 @@ describe('promise blocking queue', () => {
                 const events: IEvent[] = [];
                 const queue = new BlockingQueue({concurrency: 2});
                 const resultOne = queue.enqueue(constructRunFn(100), 'one', events);
+                expect(resultOne.started).to.eql(true);
                 expect(queue.activeCount).to.eql(1);
                 expect(queue.pendingCount).to.eql(0);
                 const resultTwo = queue.enqueue(constructRunFn(100), 'two', events);
+                expect(resultTwo.started).to.eql(true);
                 expect(queue.activeCount).to.eql(2);
                 expect(queue.pendingCount).to.eql(0);
                 const resultThree = queue.enqueue(constructRunFn(100), 'three', events);
+                expect(resultThree.started).to.eql(false);
                 expect(queue.activeCount).to.eql(2);
                 expect(queue.pendingCount).to.eql(1);
                 return Promise.all([resultOne.enqueuePromise, resultTwo.enqueuePromise])
@@ -237,6 +246,7 @@ describe('promise blocking queue', () => {
                 queue.enqueue(constructRunFn(200), 'one', events);
                 queue.enqueue(constructRunFn(200), 'two', events);
                 const resultThree = queue.enqueue(constructRunFn(0), 'three', events);
+                expect(resultThree.started).to.eql(false);
                 return resultThree.enqueuePromise
                     .then(() => {
                         return resultThree.fnPromise;
@@ -264,7 +274,9 @@ describe('promise blocking queue', () => {
                 });
                 queue.enqueue(constructRunFn(100), 'one', events);
                 const resultTwo = queue.enqueue(constructRunFn(200), 'two', events);
+                expect(resultTwo.started).to.eql(true);
                 const resultThree = queue.enqueue(constructRunFn(200), 'three', events);
+                expect(resultThree.started).to.eql(false);
                 return resultTwo.fnPromise
                     .then(() => {
                         expect(isEmpty).to.eql(true);

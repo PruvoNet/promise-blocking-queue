@@ -211,6 +211,12 @@ Type: `Promise<T>`
 
 A promise that will be resolved with the result of `fn`.
 
+###### started
+
+Type: `boolean`
+
+Indicates if the task has already started to run
+
 ##### fn
 
 Type: `Function`

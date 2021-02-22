@@ -13,7 +13,7 @@ interface IBlockingQueueEvents {
 
 type MessageEmitter = StrictEventEmitter<EventEmitter, IBlockingQueueEvents>;
 
-type PromiseResolve<T> = (value?: T | PromiseLike<T>) => void;
+type PromiseResolve<T> = (value: T | PromiseLike<T>) => void;
 
 interface IPromiseParts<T> {
     promise: Promise<T>;
@@ -67,12 +67,15 @@ export class BlockingQueue extends (EventEmitter as new() => MessageEmitter) {
             fnResolve: fnPromiseParts.resolve,
             enqueueResolve: enqueuePromiseParts.resolve,
         };
+        let started = false;
         if (this.activeCount < this._options.concurrency) {
+            started = true;
             this._run(item);
         } else {
             this._queue.append(new Node(item));
         }
         return {
+            started,
             enqueuePromise: enqueuePromiseParts.promise,
             fnPromise: fnPromiseParts.promise,
         };
