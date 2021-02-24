@@ -49,71 +49,92 @@ import { BlockingQueue } from 'promise-blocking-queue';
 const queue = new BlockingQueue({ concurrency: 2 });
 let handled = 0;
 let failed = 0;
+let awaitDrain: Promise<void> | undefined;
+let realCount = 0;
 
 const readStream = fs.createReadStream('./users.json', { flags: 'r', encoding: 'utf-8' });
 const jsonReadStream = JSONStream.parse('*');
 const jsonWriteStream = JSONStream.stringify();
 const writeStream = fs.createWriteStream('./results.json');
 
-const logFailed = () => {
-  console.log(`failed ${++failed}`);
+const addUserToDB = async (user) => {
+    try {
+        console.log(`adding ${user.username}`);
+        // Simulate long running task
+        await sleep((handled + 1) * 100);
+        console.log(`added ${user.username} #${++handled}`);
+        const writePaused = !jsonWriteStream.write(user.username);
+        if (writePaused && !awaitDrain) {
+            // Down stream asked to pause the writes for now
+            awaitDrain = new Promise((resolve) => {
+                jsonWriteStream.once('drain', resolve);
+            });
+        }
+    } catch (err) {
+        console.log(`failed ${++failed}`, err);
+    }
 };
 
-const logAddedUser = (username) => () => {
-  console.log(`added ${username} #${++handled}`);
-  jsonWriteStream.write(username);
+const handleUser = async (user) => {
+    // Wait until the down stream is ready to receive more data without increasing the memory footprint
+    if (awaitDrain) {
+        await awaitDrain;
+        awaitDrain = undefined;
+    }
+    realCount++;
+    return queue.enqueue(addUserToDB, user).enqueuePromise;
 };
 
-const addUserToDB = (user) => {
-  console.log(`adding ${user.username}`);
-  // Simulate long running task
-  return sleep((handled + 1) * 100).then(logAddedUser(user.username));
-};
-
+// Do not use async!
 const mapper = (user, cb) => {
-  console.log(`streamed ${user.username}`);
-  const qResult = queue.enqueue(addUserToDB, user);
-  qResult.fnPromise.catch(logFailed);
-  // Continue streaming only after current item handling starts
-  qResult.enqueuePromise.then(cb, cb);
-  return false;
+    console.log(`streamed ${user.username}`);
+    handleUser(user)
+        .then(() => {
+            cb();
+        });
+    // Pause the read stream until we are ready to handle more data
+    return false;
 };
-
-// tslint:disable-next-line:no-empty
-const noop = () => {};
 
 const onReadEnd = () => {
-  console.log('done read streaming');
-  // Wait until all work is done
-  queue.on('idle', () => {
-    jsonWriteStream.end();
-  });
+    console.log('done read streaming');
+    // If nothing was written, idle event will not be fired
+    if (realCount === 0) {
+        jsonWriteStream.end();
+    } else {
+        // Wait until all work is done
+        queue.on('idle', () => {
+            jsonWriteStream.end();
+        });
+    }
 };
 
 const onWriteEnd = () => {
-  console.log(`done processing - ${handled} handled, ${failed} failed`);
-  process.exit(0);
+    console.log(`done processing - ${handled} handled, ${failed} failed`);
+    process.exit(0);
 };
 
 jsonWriteStream
-  .pipe(writeStream)
-  .on('error', (err) => {
-    console.log('error wrtie streaming', err);
-    process.exit(1);
-  })
-  .on('end', onWriteEnd)
-  .on('finish', onWriteEnd);
+    .pipe(writeStream)
+    .on('error', (err) => {
+        console.log('error wrtie streaming', err);
+        process.exit(1);
+    })
+    .on('end', onWriteEnd)
+    .on('finish', onWriteEnd);
 
 readStream
-  .pipe(jsonReadStream)
-  .pipe(es.map(mapper))
-  .on('data', noop)
-  .on('error', (err) => {
-    console.log('error read streaming', err);
-    process.exit(1);
-  })
-  .on('finish', onReadEnd)
-  .on('end', onReadEnd);
+    .pipe(jsonReadStream)
+    .pipe(es.map(mapper))
+    .on('data', () => {
+        // Do nothing
+    })
+    .on('error', (err) => {
+        console.log('error read streaming', err);
+        process.exit(1);
+    })
+    .on('finish', onReadEnd)
+    .on('end', onReadEnd);
 ```
 
 If `users.json` is like:
@@ -144,8 +165,8 @@ streamed b
 adding b
 streamed c // c now waits in line to start and streaming is paused until then
 added a #1
-streamed d // d only get streamed after c has a spot in the queue
 adding c // c only gets handled after a is done
+streamed d // d only get streamed after c has a spot in the queue
 added b #2
 adding d // d only gets handled after b is done
 done read streaming
