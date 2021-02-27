@@ -50,7 +50,6 @@ const queue = new BlockingQueue({ concurrency: 2 });
 let handled = 0;
 let failed = 0;
 let awaitDrain: Promise<void> | undefined;
-let realCount = 0;
 
 const readStream = fs.createReadStream('./users.json', { flags: 'r', encoding: 'utf-8' });
 const jsonReadStream = JSONStream.parse('*');
@@ -81,7 +80,6 @@ const handleUser = async (user) => {
         await awaitDrain;
         awaitDrain = undefined;
     }
-    realCount++;
     return queue.enqueue(addUserToDB, user).enqueuePromise;
 };
 
@@ -99,7 +97,7 @@ const mapper = (user, cb) => {
 const onReadEnd = () => {
     console.log('done read streaming');
     // If nothing was written, idle event will not be fired
-    if (realCount === 0) {
+    if (queue.pendingCount === 0 && queue.activeCount === 0) {
         jsonWriteStream.end();
     } else {
         // Wait until all work is done
