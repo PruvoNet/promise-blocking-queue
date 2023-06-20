@@ -1,10 +1,9 @@
 [![Npm Version](https://img.shields.io/npm/v/promise-blocking-queue.svg?style=popout)](https://www.npmjs.com/package/promise-blocking-queue)
-[![Build Status](https://travis-ci.org/PruvoNet/promise-blocking-queue.svg?branch=master)](https://travis-ci.org/PruvoNet/promise-blocking-queue)
-[![Coverage Status](https://coveralls.io/repos/github/PruvoNet/promise-blocking-queue/badge.svg?branch=master)](https://coveralls.io/github/PruvoNet/promise-blocking-queue?branch=master)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/58abd1713b064f4c9af7dc88d7178ebe)](https://www.codacy.com/app/regevbr/promise-blocking-queue?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=PruvoNet/promise-blocking-queue&amp;utm_campaign=Badge_Grade)
+[![node](https://img.shields.io/node/v-lts/promise-blocking-queue)](https://www.npmjs.com/package/promise-blocking-queue)
+[![Build status](https://github.com/PruvoNet/promise-blocking-queue/actions/workflows/ci.yml/badge.svg?branch=master)](https://www.npmjs.com/package/promise-blocking-queue)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/5cc9e9fe4871a315f2aa/test_coverage)](https://codeclimate.com/github/PruvoNet/promise-blocking-queue/test_coverage)
+[![Maintainability](https://api.codeclimate.com/v1/badges/5cc9e9fe4871a315f2aa/maintainability)](https://codeclimate.com/github/PruvoNet/promise-blocking-queue/maintainability)
 [![Known Vulnerabilities](https://snyk.io/test/github/PruvoNet/promise-blocking-queue/badge.svg?targetFile=package.json)](https://snyk.io/test/github/PruvoNet/promise-blocking-queue?targetFile=package.json)
-[![dependencies Status](https://david-dm.org/PruvoNet/promise-blocking-queue/status.svg)](https://david-dm.org/PruvoNet/promise-blocking-queue)
-[![devDependencies Status](https://david-dm.org/PruvoNet/promise-blocking-queue/dev-status.svg)](https://david-dm.org/PruvoNet/promise-blocking-queue?type=dev)
 
 # Promise Blocking Queue
 Memory optimized promise blocking queue with concurrency control, specially designed to handle large data sets that must 
