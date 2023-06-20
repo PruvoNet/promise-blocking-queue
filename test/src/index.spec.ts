@@ -17,7 +17,7 @@ describe('promise blocking queue', () => {
             try {
                 // @ts-ignore
                 new BlockingQueue();
-            } catch (error) {
+            } catch (error: any) {
                 expect(error.message).to.eql(
                     `Expected \`concurrency\` to be a number from 1 and up, got \`undefined\` (undefined)`);
                 done();
@@ -32,7 +32,7 @@ describe('promise blocking queue', () => {
                     // @ts-ignore
                     concurrency: '1',
                 });
-            } catch (error) {
+            } catch (error: any) {
                 expect(error.message).to.eql(
                     `Expected \`concurrency\` to be a number from 1 and up, got \`1\` (string)`);
                 done();
@@ -46,7 +46,7 @@ describe('promise blocking queue', () => {
                 new BlockingQueue({
                     concurrency: -1,
                 });
-            } catch (error) {
+            } catch (error: any) {
                 expect(error.message).to.eql(
                     `Expected \`concurrency\` to be a number from 1 and up, got \`-1\` (number)`);
                 done();
@@ -60,7 +60,7 @@ describe('promise blocking queue', () => {
                 new BlockingQueue({
                     concurrency: 0,
                 });
-            } catch (error) {
+            } catch (error: any) {
                 expect(error.message).to.eql(
                     `Expected \`concurrency\` to be a number from 1 and up, got \`0\` (number)`);
                 done();
