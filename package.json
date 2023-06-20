@@ -14,7 +14,7 @@
     "buildDist": "rm -rf dist/* && ./node_modules/.bin/tsc",
     "test": "npm run lint && npm run mocha",
     "mocha": "mocha --config test/.mocharc.json",
-    "cover": "istanbul cover -x dist/index.js node_modules/mocha/bin/_mocha -- -R spec --config test/.mocharc.json",
+    "cover": "nyc --reporter=lcov --reporter=text-summary mocha --config test/.mocharc.json",
     "lint": "tslint -c tslint.json 'src/**/*.ts' 'test/**/*.ts'"
   },
   "repository": {
@@ -54,6 +54,7 @@
   },
   "homepage": "https://github.com/PruvoNet/promise-blocking-queue#readme",
   "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/mocha": "^10.0.1",
@@ -63,8 +64,8 @@
     "coveralls": "^3.1.1",
     "delay": "^6.0.0",
     "dirty-chai": "^2.0.1",
-    "istanbul": "^0.4.5",
     "mocha": "^10.2.0",
+    "nyc": "^15.1.0",
     "sinon": "^15.1.2",
     "sinon-chai": "^3.7.0",
     "sleep-promise": "^9.1.0",
