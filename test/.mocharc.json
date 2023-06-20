@@ -1,0 +1,10 @@
+{
+  "reporter": "spec",
+  "require": [
+    "ts-node/register",
+    "source-map-support/register",
+    "test/setup.ts"
+  ],
+  "recursive": true,
+  "spec": "test/**/*.spec.ts"
+}
